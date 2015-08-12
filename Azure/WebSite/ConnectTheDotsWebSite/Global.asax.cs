@@ -23,6 +23,7 @@
 //  ---------------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Web.Http;
 using System.Web.Routing;
@@ -47,13 +48,17 @@ namespace ConnectTheDotsWebSite
 
     public struct GlobalSettings
     {
+        public bool AddHistorical { get; set; }
         public bool ForceSocketCloseOnUserActionsTimeout { get; set; }
     }
 
     public class Global : System.Web.HttpApplication
     {
-        EventHubSettings eventHubDevicesSettings;
-        EventHubSettings eventHubAlertsSettings;
+        public static IDictionary<string, KeyValuePair<DateTime, IEnumerable<IDictionary<string, object>>>>
+            lastHistoricalData = new Dictionary<string, KeyValuePair<DateTime, IEnumerable<IDictionary<string, object>>>>();
+
+        public static EventHubSettings eventHubDevicesSettings;
+        public static EventHubSettings eventHubAlertsSettings;
         public static GlobalSettings globalSettings;
 
         protected void Application_Start(Object sender, EventArgs e)
@@ -150,6 +155,8 @@ namespace ConnectTheDotsWebSite
         {
             try
             {
+                globalSettings.AddHistorical =
+                    CloudConfigurationManager.GetSetting("AddHistorical") == "true";
                 globalSettings.ForceSocketCloseOnUserActionsTimeout =
                     CloudConfigurationManager.GetSetting("ForceSocketCloseOnUserActionsTimeout") == "true";
             }

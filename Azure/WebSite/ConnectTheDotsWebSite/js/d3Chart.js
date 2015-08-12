@@ -25,18 +25,23 @@
 /*
 containerId : string,
 ]*/
-function d3Chart(containerId) {
+
+function d3Chart(containerId, timeIntervalMins, isHistorical) {
     var self = this;
     // call base class contructor
     baseClass.call(self);
     // initialize object
     self._flows = {};
     self._flowsVisuals = {};
+
     self._containerId = containerId;
     self._CONSTANTS = {
         MS_PER_MINUTE: 60000,
-        WINDOW_MINUTES: 10,
+        WINDOW_MINUTES: timeIntervalMins,
     }
+    self._isHistorical = isHistorical;
+    self._historicalStartDate = false;
+
     self._isBulking = false;
     self._colors = d3.scale.category10();
 
@@ -55,6 +60,14 @@ function d3Chart(containerId) {
     // register update handler
     self.addEventListener('update', function (evt) {
         self.pruneOldData();
+
+        var evtMessage = undefined;
+        if (evt != undefined && evt.owner != undefined) {
+            evtMessage = evt.owner;
+            if (evtMessage.doNotUpdate != undefined) {
+                return;
+            }
+        }
         self.updateChart();
     });
 
@@ -91,6 +104,19 @@ d3Chart.prototype = {
             self.raiseEvent('loaded');
         }
         return self;
+    },
+    setHistorical: function (historicalStartDate) {
+        var self = this;
+        self._isHistorical = true;
+        self._historicalStartDate = historicalStartDate;
+    },
+    changeConst: function (timeWindow) {
+        var self = this;
+        if (!self._isHistorical) {
+            self._CONSTANTS.WINDOW_MINUTES = timeWindow;
+            self.pruneOldData();
+            self.updateChart();
+        }
     },
     addFlow: function (newFlow, yAxis) {
         var self = this;
@@ -346,12 +372,20 @@ d3Chart.prototype = {
     },
     pruneOldData: function () {
         var self = this;
-        var now = new Date();
-        var cutoff = new Date(now - self._CONSTANTS.WINDOW_MINUTES * self._CONSTANTS.MS_PER_MINUTE)
+
+        var cutoff, upperMargin;
+        if (self._isHistorical) {
+            cutoff = new Date(self._historicalStartDate);
+            upperMargin = new Date(self._historicalStartDate + (self._CONSTANTS.WINDOW_MINUTES+10) * self._CONSTANTS.MS_PER_MINUTE);
+        } else {
+            var now = new Date();
+            cutoff = new Date(now - self._CONSTANTS.WINDOW_MINUTES * self._CONSTANTS.MS_PER_MINUTE);//self._CONSTANTS.WINDOW_MINUTES
+            upperMargin = now + (10) * self._CONSTANTS.MS_PER_MINUTE;
+        }        
 
         // cut data
         for (var id in self._flows) {
-            if (self._flows[id].cutData(cutoff)) {
+            if (self._flows[id].cutData(cutoff, upperMargin)) {
                 self.pruneAlerts(id, cutoff);
                 //self.removeFlowVisual(id);
             }
@@ -359,136 +393,151 @@ d3Chart.prototype = {
     },
 
     updateChart: function () {
+        try {
+            var self = this;
 
-        var self = this;
+            var minDate = new Date(3015, 1, 1);
+            var maxDate = new Date(1915, 1, 1);
 
-        var minDate = new Date(3015, 1, 1);
-        var maxDate = new Date(1915, 1, 1);
+            var minVal = [Number.MAX_VALUE, Number.MAX_VALUE];
+            var maxVal = [0, 0];
 
-        var minVal = [Number.MAX_VALUE, Number.MAX_VALUE];
-        var maxVal = [0, 0];
+            var displayHeight = $(window).height();
 
-        var displayHeight = $(window).height();
+            for (var id in self._flows) {
+                var dataFlow = self._flows[id];
+                if (dataFlow.visible == false) continue;
+                var data = dataFlow.getData();
+                if (data.length == 0 || !dataFlow.displayName()) continue;
 
-        for (var id in self._flows) {
-            var dataFlow = self._flows[id];
-            if (dataFlow.visible == false) continue;
-            var data = dataFlow.getData();
-            if (data.length == 0 || !dataFlow.displayName()) continue;
+                // sort data
+                data.sort(function(a, b) {
+                    if (a.time < b.time) return -1;
+                    if (a.time > b.time) return 1;
+                    return 0;
+                });
 
-            // sort data
-            data.sort(function (a, b) {
-                if (a.time < b.time) return -1;
-                if (a.time > b.time) return 1;
-                return 0;
-            });
+                var y = dataFlow.yAxis();
 
-            var y = dataFlow.yAxis();
+                for (var j = 0; j < data.length; j++) {
 
-            for (var j = 0; j < data.length; j++) {
+                    var c = data[j].data;
+                    var t = data[j].time;
 
-                var c = data[j].data;
-                var t = data[j].time;
+                    if (c < minVal[y]) {
+                        minVal[y] = c;
+                    }
 
-                if (c < minVal[y]) {
-                    minVal[y] = c;
-                }
+                    if (c > maxVal[y]) {
+                        maxVal[y] = c;
+                    }
 
-                if (c > maxVal[y]) {
-                    maxVal[y] = c;
-                }
+                    if (t > maxDate) {
+                        maxDate = t;
+                    }
 
-                if (t > maxDate) {
-                    maxDate = t;
-                }
-
-                if (t < minDate) {
-                    minDate = t;
+                    if (t < minDate) {
+                        minDate = t;
+                    }
                 }
             }
+
+            // create chart on demand
+            if (self._svg == null) {
+                self.createChart();
+            }
+
+            // check y0 label
+            self.setY0Label();
+
+            var wasBoundsChanged = !self._previousBounds || self._previousBounds.maxVal0 !== maxVal[0] || self._previousBounds.minVal0 !== minVal[0];
+
+            if (!self._wasResizeHandled || wasBoundsChanged && minVal[0] < Number.MAX_VALUE) {
+                var scaleMargin = (maxVal[0] - minVal[0]) * 10 / 100;
+                self._y0 = self._y0
+                    .domain([minVal[0] - scaleMargin, maxVal[0] + scaleMargin]);
+
+                var yAxisLeft = d3.svg.axis()
+                    .scale(self._y0)
+                    .orient("left")
+                self._svg.selectAll("g.y0.axis")
+                    .call(yAxisLeft);
+
+                self._wasResizeHandled = true;
+            }
+
+            wasBoundsChanged = !self._previousBounds || self._previousBounds.maxVal1 !== maxVal[1] || self._previousBounds.minVal1 !== minVal[1];
+
+            if (!self._wasResizeHandled || wasBoundsChanged && minVal[1] < Number.MAX_VALUE) {
+                var scaleMargin = (maxVal[1] - minVal[1]) * 10 / 100;
+
+                self._y1 = self._y1
+                    .domain([minVal[1] - scaleMargin, maxVal[1] + scaleMargin]);
+
+                var yAxisRight = d3.svg.axis()
+                    .scale(self._y1)
+                    .orient("right")
+                self._svg.selectAll("g.y1.axis")
+                    .call(yAxisRight);
+
+                self._wasResizeHandled = true;
+            }
+
+            self._x = self._x
+                .domain([minDate, maxDate]);
+
+            var format;
+            if (maxDate.getDate() != minDate.getDate() || maxDate.getMonth() != minDate.getMonth() || maxDate.getFullYear() != minDate.getFullYear()) {
+                if (parseInt((maxDate - minDate) / (24 * 3600 * 1000)) > 10) {
+                    format = "%d %b";
+                } else {
+                    format = "%d %b %H:%M";
+                }
+            } else {
+                if (parseInt((maxDate - minDate) / (60 * 1000)) > 20) {
+                    format = "%H:%M";
+                } else {
+                    format = "%X";
+                }
+            }
+            var xAxis = d3.svg.axis()
+                .scale(self._x)
+                .tickFormat(d3.time.format(format))
+                .orient("bottom");
+
+            self._svg.selectAll("g.x.axis")
+                .call(xAxis);
+
+            self._previousBounds = {
+                maxVal0: maxVal[0],
+                maxVal1: maxVal[1],
+                minVal0: minVal[0],
+                minVal1: minVal[1],
+            };
+
+            if (!self._line) {
+                self._line = [
+                    d3.svg.line()
+                    .interpolate("monotone")
+                    .x(function(d) {
+                        return self._x(d.time);
+                    })
+                    .y(function(d) {
+                        return self._y0(d.data);
+                    }),
+                    d3.svg.line()
+                    .interpolate("monotone")
+                    .x(function(d) {
+                        return self._x(d.time);
+                    })
+                    .y(function(d) {
+                        return self._y1(d.data);
+                    })
+                ];
+            }
+        } catch (e) {
+            console.log(e);
         }
-
-        // create chart on demand
-        if (self._svg == null) {
-            self.createChart();
-        }
-
-        // check y0 label
-        self.setY0Label();
-
-        var wasBoundsChanged = !self._previousBounds || self._previousBounds.maxVal0 !== maxVal[0] || self._previousBounds.minVal0 !== minVal[0];
-
-        if (!self._wasResizeHandled || wasBoundsChanged && minVal[0] < Number.MAX_VALUE) {
-            var scaleMargin = (maxVal[0] - minVal[0]) * 10 / 100;
-            self._y0 = self._y0
-				.domain([minVal[0] - scaleMargin, maxVal[0] + scaleMargin]);
-
-            var yAxisLeft = d3.svg.axis()
-				.scale(self._y0)
-				.orient("left")
-            self._svg.selectAll("g.y0.axis")
-				.call(yAxisLeft);
-
-            self._wasResizeHandled = true;
-        }
-
-        wasBoundsChanged = !self._previousBounds || self._previousBounds.maxVal1 !== maxVal[1] || self._previousBounds.minVal1 !== minVal[1];
-
-        if (!self._wasResizeHandled || wasBoundsChanged && minVal[1] < Number.MAX_VALUE) {
-            var scaleMargin = (maxVal[1] - minVal[1]) * 10 / 100;
-
-            self._y1 = self._y1
-				.domain([minVal[1] - scaleMargin, maxVal[1] + scaleMargin]);
-
-            var yAxisRight = d3.svg.axis()
-				.scale(self._y1)
-				.orient("right")
-            self._svg.selectAll("g.y1.axis")
-				.call(yAxisRight);
-
-            self._wasResizeHandled = true;
-        }
-
-        self._x = self._x
-			.domain([minDate, maxDate]);
-
-        var xAxis = d3.svg.axis()
-			.scale(self._x)
-			.tickFormat(d3.time.format("%X"))
-			.orient("bottom");
-
-        self._svg.selectAll("g.x.axis")
-			.call(xAxis);
-
-        self._previousBounds = {
-            maxVal0: maxVal[0],
-            maxVal1: maxVal[1],
-            minVal0: minVal[0],
-            minVal1: minVal[1],
-        };
-
-        if (!self._line) {
-            self._line = [
-                d3.svg.line()
-                .interpolate("monotone")
-                .x(function (d) {
-                    return self._x(d.time);
-                })
-                .y(function (d) {
-                    return self._y0(d.data);
-                }),
-
-                d3.svg.line()
-                .interpolate("monotone")
-                .x(function (d) {
-                    return self._x(d.time);
-                })
-                .y(function (d) {
-                    return self._y1(d.data);
-                })
-            ];
-        }
-
         try {
             var pos = 0;
             for (var id in self._flows) {
@@ -586,6 +635,8 @@ d3Chart.prototype = {
 
         if (self._flows.hasOwnProperty(evt.owner)) {
             self._flows[evt.owner].visible = true;
+            //alert(evt.toSource());
+            self.updateChart();
         }
     },
     _onMessageRemoveGuid: function (evt) {
@@ -605,19 +656,25 @@ d3Chart.prototype = {
             // check filter
             //if (self._filter && !self._filter.checkGUID(evt.guid)) return;
             // check event time
-            var now = new Date();
-            var cutoff = new Date(now - self._CONSTANTS.WINDOW_MINUTES * self._CONSTANTS.MS_PER_MINUTE)
 
-            if (evt.time < cutoff) {
+            var cutoff, upperMargin;
+            if (self._isHistorical) {
+                cutoff = new Date(self._historicalStartDate);
+                upperMargin = new Date(self._historicalStartDate + (self._CONSTANTS.WINDOW_MINUTES + 10) * self._CONSTANTS.MS_PER_MINUTE);
+            } else {
+                var now = new Date();
+                cutoff = new Date(now - self._CONSTANTS.WINDOW_MINUTES * self._CONSTANTS.MS_PER_MINUTE);//self._CONSTANTS.WINDOW_MINUTES
+                upperMargin = now + (10) * self._CONSTANTS.MS_PER_MINUTE;
+            }
+            if (evt.time < cutoff || evt.time > upperMargin) {
                 return;
             }
 
             // add event
             self.raiseEvent('newData', evt);
-
             // check if nessasary to update
             if (!self._isBulking) {
-                self.raiseEvent('update');
+                self.raiseEvent('update', evt);
             } else {
                 self.raiseEvent('loading', evt.displayname);
             }

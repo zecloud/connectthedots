@@ -218,6 +218,13 @@ namespace Microsoft.ConnectTheDots.CloudDeploy.CreateWebConfig
                 String.Format( "DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1}", inputs.StorageAccountName,
                     storageKey );
 
+            if( ConsoleHelper.Confirm( "Do you want to enable historical data? (Corresponding Stream Snalytics jobs and Storage should be configured)" ) )
+            {
+                doc.SelectSingleNode( "/configuration/appSettings/add[@key='AddHistorical']/@value" )
+                    .Value = "true";
+            }
+            
+            
             //var outputFile = System.IO.Path.GetFullPath( inputs.WebSiteDirectory + outputFileName );
             string outputFilePath = Environment.GetFolderPath( Environment.SpecialFolder.Desktop );
             //Console.WriteLine(outputFilePath);

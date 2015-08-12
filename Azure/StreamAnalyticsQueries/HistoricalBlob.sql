@@ -1,4 +1,4 @@
-﻿//  ---------------------------------------------------------------------------------
+/*  ---------------------------------------------------------------------------------
 //  Copyright (c) Microsoft Open Technologies, Inc.  All rights reserved.
 // 
 //  The MIT License (MIT)
@@ -20,30 +20,23 @@
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
-//  ---------------------------------------------------------------------------------
+//  ---------------------------------------------------------------------------------*/
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-using System.Web.UI;
-using System.Web.UI.WebControls;
-
-namespace ConnectTheDotsWebSite
-{
-
-    public partial class Default : System.Web.UI.Page
-    {
-        protected string AddHistorical = "true";
-        protected string ForceSocketCloseOnUserActionsTimeout = "false";
-        protected void Page_Load(object sender, EventArgs e)
-        {
-            AddHistorical =
-                Global.globalSettings.AddHistorical.ToString();
-            ForceSocketCloseOnUserActionsTimeout =
-                Global.globalSettings.ForceSocketCloseOnUserActionsTimeout.ToString();
-        }
-
-
-    }
-}
+Select
+    measurename,
+    unitofmeasure,
+    location,
+    organization,
+    guid,
+    displayname,
+    Max(timecreated) as timecreated,
+    Avg(value) AS value
+From
+    devices TIMESTAMP BY timecreated
+/*
+where
+    measurename = 'temperature' OR measurename='Temperature'
+*/
+Group by
+    measurename, unitofmeasure, location, organization, guid, displayname,
+    TumblingWindow(Second, {0})

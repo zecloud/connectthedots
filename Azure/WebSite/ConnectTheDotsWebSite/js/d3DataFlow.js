@@ -110,11 +110,19 @@ d3DataFlow.prototype = {
     clearData: function () {
         this._data = [];
     },
-    cutData: function (cutoff) {
+    cutData: function (cutoff, upperMargin) {
         var len = this._data.length;
-        while (this._data.length >= 1 && this._data[0].time < cutoff) {
+
+        this._data.sort(function (a, b) {
+            if (a.time < b.time) return -1;
+            if (a.time > b.time) return 1;
+            return 0;
+        });
+
+        while (this._data.length >= 1 && (this._data[0].time < cutoff)) {
             this._data.shift();
         }
+
         return len != this._data.length;
     },
     getData: function () {

@@ -22,6 +22,8 @@
 //  THE SOFTWARE.
 //  ---------------------------------------------------------------------------------
 
+using Historical;
+
 namespace Microsoft.ConnectTheDots.CloudDeploy.AzurePrep
 {
     using System;
@@ -69,6 +71,7 @@ namespace Microsoft.ConnectTheDots.CloudDeploy.AzurePrep
         internal class AzurePrepOutputs
         {
             public string SBNamespace;
+            public string StorageKey;
             public string nsConnectionString;
             public EventHubDescription ehDevices = null;
             public EventHubDescription ehAlerts = null;
@@ -146,6 +149,7 @@ namespace Microsoft.ConnectTheDots.CloudDeploy.AzurePrep
                 return false;
             }
             
+
             AzurePrepOutputs createResults = CreateEventHub( inputs );
 
             if( createResults == null )
@@ -424,6 +428,20 @@ namespace Microsoft.ConnectTheDots.CloudDeploy.AzurePrep
                 }
             }
 
+
+            _ConsoleBuffer.Add( "Reading Storage Account StorageKey..." );
+
+            var keyResponse = stgMgmt.StorageAccounts.GetKeys( inputs.StorageAccountName.ToLowerInvariant( ) );
+
+            if( keyResponse.StatusCode != System.Net.HttpStatusCode.OK )
+            {
+                _ConsoleBuffer.Add( string.Format( "Error reading Storage Key for {0} Storage Account: {1}",
+                    inputs.StorageAccountName, keyResponse.StatusCode ) );
+                return null;
+            }
+
+            result.StorageKey = keyResponse.PrimaryKey;
+
             return result;
         }
 
@@ -490,7 +508,6 @@ namespace Microsoft.ConnectTheDots.CloudDeploy.AzurePrep
         private void CreateStreamAnalyticsJobs( AzurePrepInputs azurePrepIn, AzurePrepOutputs azurePrepOut )
         {
             string resourceGroupName = SelectResourceGroup( azurePrepIn );
-
             string path = Path.GetDirectoryName( System.Reflection.Assembly.GetEntryAssembly( ).Location );
             path += "\\..\\..\\..\\..\\StreamAnalyticsQueries";
             foreach( string filename in Directory.GetFiles( path ) )
@@ -499,37 +516,83 @@ namespace Microsoft.ConnectTheDots.CloudDeploy.AzurePrep
                 if( extension != null && extension.Contains( "sql" ) )
                 {
                     string nameWithoutExtension = Path.GetFileNameWithoutExtension( filename );
-                    EventHubDescription ehOutput = ( filename.ToLower( ).Contains( "aggregates" ) || azurePrepOut.ehAlerts == null )
-                        ? azurePrepOut.ehDevices
-                        : azurePrepOut.ehAlerts;
-
-                    if( ehOutput == null )
-                    {
-                        _ConsoleBuffer.Add( string.Format( " Skip creating {0} Stream Analytics job because there is no output Event Hub...", nameWithoutExtension ) );
-                        continue;
-                    }
-
                     string queryFilename = filename;
-                    ConsoleHelper.AskAndPerformAction(
-                        "Do you want to create " + nameWithoutExtension + " job?",
-                        "Are you sure you want to create " + nameWithoutExtension + " job?",
-                        "Are you sure you do not want to create " + nameWithoutExtension + " job?",
-                        ( ) =>
+
+                    if( filename.ToLower( ).Contains( "historicalblob" ) )
+                    {
+                        ConsoleHelper.AskAndPerformAction(
+                            "Do you want to create SA jobs for saving historical data into Blob storage?",
+                            "Are you sure you want to create SA jobs for saving historical data?",
+                            "Are you sure you do not want to create SA jobs for saving historical data?",
+                            ( ) =>
+                            {
+                                string query = File.ReadAllText( queryFilename );
+
+                                for( int i = HistoricalConstants.TUMBLING_WINDOW_SIZES_SEC.Length - 1; i >= 1; --i )
+                                {
+                                    string containerName = HistoricalConstants.BLOB_CONTAINER_NAME_PREFIX +
+                                                           HistoricalConstants.TUMBLING_WINDOW_SIZES_SEC[0];
+                                    string blobPrefix = HistoricalConstants.BLOB_NAME_PREFIX +
+                                                           HistoricalConstants.TUMBLING_WINDOW_SIZES_SEC[0];
+
+                                    string jobName = HistoricalConstants.STREAM_ANALYTICS_NAME_PREFIX + HistoricalConstants.TUMBLING_WINDOW_SIZES_SEC[0];
+
+                                    _ConsoleBuffer.Add( string.Format( "Creating {0} Stream Analytics job...", jobName ) );
+
+                                    CreateStreamAnalyticsJob( jobName, String.Format( query, HistoricalConstants.TUMBLING_WINDOW_SIZES_SEC[i] ), resourceGroupName,
+                                        azurePrepIn, azurePrepOut.ehDevices, null, new BlobOutputDataSource
+                                        {
+                                            Properties = new BlobOutputDataSourceProperties
+                                            {
+                                                BlobPathPrefix = blobPrefix,
+                                                Container = containerName,
+                                                StorageAccounts = new List<Azure.Management.StreamAnalytics.Models.StorageAccount>
+                                                {
+                                                    new Azure.Management.StreamAnalytics.Models.StorageAccount
+                                                    {
+                                                        AccountKey = azurePrepOut.StorageKey,
+                                                        AccountName = azurePrepIn.StorageAccountName
+                                                    }
+                                                }
+                                            }
+                                        } );
+                                }
+                            },
+                            _ConsoleBuffer );
+                    }
+                    else
+                    {
+                        EventHubDescription ehOutput = ( filename.ToLower( ).Contains( "aggregates" ) || azurePrepOut.ehAlerts == null )
+                            ? azurePrepOut.ehDevices
+                            : azurePrepOut.ehAlerts;
+
+                        if( ehOutput == null )
                         {
-                            string query = File.ReadAllText( queryFilename );
+                            _ConsoleBuffer.Add( string.Format( " Skip creating {0} Stream Analytics job because there is no output Event Hub...", nameWithoutExtension ) );
+                            continue;
+                        }
 
-                            _ConsoleBuffer.Add( string.Format( "Creating {0} Stream Analytics job...", nameWithoutExtension ) );
+                        ConsoleHelper.AskAndPerformAction(
+                            "Do you want to create " + nameWithoutExtension + " job?",
+                            "Are you sure you want to create " + nameWithoutExtension + " job?",
+                            "Are you sure you do not want to create " + nameWithoutExtension + " job?",
+                            ( ) =>
+                            {
+                                string query = File.ReadAllText( queryFilename );
 
-                            CreateStreamAnalyticsJob( nameWithoutExtension, query, resourceGroupName,
-                                azurePrepIn, azurePrepOut.ehDevices, ehOutput );
-                        },
-                        _ConsoleBuffer );
+                                _ConsoleBuffer.Add( string.Format( "Creating {0} Stream Analytics job...", nameWithoutExtension ) );
+
+                                CreateStreamAnalyticsJob( nameWithoutExtension, query, resourceGroupName,
+                                    azurePrepIn, azurePrepOut.ehDevices, ehOutput );
+                            },
+                            _ConsoleBuffer );
+                    }
                 }
             }
         }
 
         private void CreateStreamAnalyticsJob( string nameSuffix, string query, string resourceGroupName, AzurePrepInputs azurePrepIn, 
-            EventHubDescription ehInput, EventHubDescription ehOutput )
+            EventHubDescription ehInput, EventHubDescription ehOutput = null, BlobOutputDataSource blobOutput = null )
         {
             const string inputName = "DevicesInput";
             const string outputName = "output";
@@ -571,28 +634,47 @@ namespace Microsoft.ConnectTheDots.CloudDeploy.AzurePrep
                 }
             };
 
-            List<Output> jobOutputs = new List<Output>
+            List<Output> jobOutputs = new List<Output>();
+
+            if( ehOutput != null )
             {
-                new Output
+                jobOutputs.Add(
+                    new Output
+                    {
+                        Name = outputName,
+                        Properties = new OutputProperties
+                        {
+                            DataSource = new EventHubOutputDataSource
+                            {
+                                Properties = new EventHubOutputDataSourceProperties
+                                {
+                                    EventHubName = ehOutput.Path,
+                                    ServiceBusNamespace = azurePrepIn.SBNamespace,
+                                    SharedAccessPolicyName = "StreamingAnalytics",
+                                    SharedAccessPolicyKey = ( ehOutput.Authorization.First( d
+                                        =>
+                                        String.Equals(d.KeyName, "StreamingAnalytics",
+                                            StringComparison.InvariantCultureIgnoreCase ) ) as
+                                        SharedAccessAuthorizationRule).PrimaryKey,
+                                }
+                            },
+                            Serialization = serialization
+                        }
+                    } );
+            }
+
+            if( blobOutput != null )
+            {
+                jobOutputs.Add( new Output
                 {
                     Name = outputName,
                     Properties = new OutputProperties
                     {
-                        DataSource = new EventHubOutputDataSource
-                        {
-                            Properties = new EventHubOutputDataSourceProperties
-                            {
-                                EventHubName = ehOutput.Path,
-                                ServiceBusNamespace = azurePrepIn.SBNamespace,
-                                SharedAccessPolicyName = "StreamingAnalytics",
-                                SharedAccessPolicyKey = ( ehOutput.Authorization.First( ( d )
-                                    => String.Equals( d.KeyName, "StreamingAnalytics", StringComparison.InvariantCultureIgnoreCase) ) as SharedAccessAuthorizationRule ).PrimaryKey,
-                            }
-                        },
+                        DataSource = blobOutput,
                         Serialization = serialization
                     }
-                }
-            };
+                } );
+            }
 
             bool created = true;
             try

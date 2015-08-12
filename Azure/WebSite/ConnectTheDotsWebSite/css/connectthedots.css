@@ -32,6 +32,12 @@ ul {
     padding-left: 0;
     font: 12px sans-serif;
     color: #666;
+}
+ul.controller {
+    list-style-type: none;
+    padding-left: 0;
+    font: 12px sans-serif;
+    color: #666;
     left: 0
 }
 
@@ -144,6 +150,10 @@ path.line {
     position: relative;
     text-align: center;
 }
+#hiscontrollersContainer {
+    position: relative;
+    text-align: center;
+}
 
 .controller {
     height: 300px;
@@ -151,7 +161,10 @@ path.line {
     position: absolute;
     text-align: left;
 }
-
+#hischartsContainer {
+    margin-left: 200px;
+    position: relative;
+}
 #chartsContainer {
     margin-left: 200px;
     position: relative;
@@ -228,7 +241,7 @@ path.line {
     }
 
 .sensorTip {
-    z-index: 10000;
+    z-index: 1000;
     position: absolute;
     white-space: pre;
     overflow: hidden;
@@ -245,4 +258,38 @@ path.line {
     border-width: thin;
     border-color: #000;
     background: rgba(243, 233, 6, 0.9);
+}
+
+nav {background:#FFF;}
+nav ul {text-align:center;}
+nav ul li {float:left;display:inline;}
+nav ul li:hover {background:#E6E6E6;}
+nav ul li a {display:block;padding:10px 25px;color:#444;}
+nav ul li ul {z-index: 10000;position:absolute;width:110px;background:#FFF;}
+nav ul li ul li {width:110px;}
+nav ul li ul li a {display:block;padding:10px 10px;color:#444;}
+nav ul li ul li:hover a {background:#F7F7F7;}
+nav ul li ul.fallback {display:none;background:#FFF;}
+nav ul li:hover ul.fallback {display:block;}
+
+.modal {
+    display:    none;
+    position:   fixed;
+    z-index:    1000;
+    top:        0;
+    left:       0;
+    height:     100%;
+    width:      100%;
+    background: rgba( 255, 255, 255, .8 ) 
+                url('../img/ajax-loader.gif') 
+                50% 50% 
+                no-repeat;
+}
+
+body.loading {
+    overflow: hidden;   
+}
+
+body.loading .modal {
+    display: block;
 }

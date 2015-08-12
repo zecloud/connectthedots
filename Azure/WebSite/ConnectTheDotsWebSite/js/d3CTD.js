@@ -23,6 +23,7 @@
 //  ---------------------------------------------------------------------------------
 
 var dataFlows = {};
+var timeIntervalMins = 10;
 var bulkMode = false;
 
 String.prototype.hashCode = function () {
@@ -54,6 +55,9 @@ function clearData() {
 
     $('#chartsContainer').empty();
     $('#chartsContainer').height(0);
+
+    $('#hischartsContainer').empty();
+    $('#hischartsContainer').height(0);
 }
 
 function onChangeSensors(isAll) {
@@ -95,33 +99,71 @@ function onOpen(evt) {
     $('#messages').prepend('<div>Connected.</div>');
 }
 
+function deleteHistoricalDataFlow(eventObjectValue) {
+    var measurenameOriginal = eventObjectValue['measurename'] + '';
+    var measurenameHash = measurenameOriginal.hashCode();
+
+    if (measurenameOriginal.indexOf('Historical') > -1 && dataFlows.hasOwnProperty(measurenameHash)) {
+        try {
+            if (dataFlows[measurenameHash].hasOwnProperty('flows')) {
+                for (var id2 in dataFlows[measurenameHash].flows) {
+                    dataFlows[measurenameHash].flows[id2].destroy();
+                    dataFlows[measurenameHash].flows[id2] = null;
+                }
+            }
+            if (dataFlows[measurenameHash].hasOwnProperty('chart')) {
+                dataFlows[measurenameHash].chart.destroy();
+                dataFlows[measurenameHash].chart = null;
+            }
+
+            delete dataFlows[measurenameHash];
+        } catch (e) { }
+    }
+    $('#hischartsContainer').empty();
+    $('#hiscontrollersContainer').empty();
+}
 function addNewDataFlow(eventObject) {
     var measurenameOriginal = eventObject['measurename'] + '';
     var measurenameHash = measurenameOriginal.hashCode();
 
+    var chartCont = '#chartsContainer';
+    var controllersCont = '#controllersContainer';
+    if (measurenameOriginal.indexOf('Historical') > -1) {
+        chartCont = '#hischartsContainer';
+        controllersCont = '#hiscontrollersContainer';
+    }
+
     // create chart if necessary
     if (!dataFlows.hasOwnProperty(measurenameHash)) {
+
         dataFlows[measurenameHash] = {
             containerId: 'chart_' + measurenameHash,
             controllerId: 'controller_' + measurenameHash,
             dataSourceFilter: new d3CTDDataSourceFilter(dataFlows.dataSource, { measurename: measurenameOriginal }),
             flows: {}
         };
+
+        var len = Object.keys(dataFlows).length, chartTimeIntervalMins = timeIntervalMins, isHistorical = false;
+        if (measurenameOriginal.indexOf('Historical') > -1) {
+            len = 2;
+            chartTimeIntervalMins = 10000 * 24 * 60 * 60;
+            isHistorical = true;
+        }
+
         // create flows controller
-        $('#controllersContainer').append('<ul id="' + dataFlows[measurenameHash].controllerId + '" style="top: ' + (Object.keys(dataFlows).length - 2) * 300 + 'px;" class="controller"></ul>');
+        $(controllersCont).append('<ul id="' + dataFlows[measurenameHash].controllerId + '" style="top: ' + (len - 2) * 300 + 'px;" class="controller"></ul>');
         dataFlows[measurenameHash].controller = new d3ChartControl(dataFlows[measurenameHash].controllerId)
                     .attachToDataSource(dataFlows[measurenameHash].dataSourceFilter);
 
         // add new div object
-        $('#chartsContainer').height((Object.keys(dataFlows).length - 1) * 300 + 'px');
-        $('#chartsContainer').append('<div id="' + dataFlows[measurenameHash].containerId + '" style="top: ' + (Object.keys(dataFlows).length - 2) * 300 + 'px;" class="chart"></div>');
+        $(chartCont).height((len - 1) * 300 + 'px');
+        $(chartCont).append('<div id="' + dataFlows[measurenameHash].containerId + '" style="top: ' + (len - 2) * 300 + 'px;" class="chart"></div>');
         // create chart
-        dataFlows[measurenameHash].chart = (new d3Chart(dataFlows[measurenameHash].containerId))
+        dataFlows[measurenameHash].chart = (new d3Chart(dataFlows[measurenameHash].containerId, chartTimeIntervalMins, isHistorical))
                     .addEventListeners({ 'loading': onLoading, 'loaded': onLoaded })
                     .attachToDataSource(dataFlows[measurenameHash].dataSourceFilter)
                     .setFilter(dataFlows[measurenameHash].controller)
                     .setBulkMode(bulkMode);
-
     };
 
     // add new flow
@@ -183,8 +225,14 @@ function checkBulkMode(evt) {
         }
     }
 }
-function onNewEvent(evt) {
+
+function onNewWebSocketEvent(evt) {
     var eventObject = evt.owner;
+    onNewEvent(eventObject);
+}
+
+function onNewEvent(eventObject) {
+    //var eventObject = evt.owner;
     var flowCnt = dataFlows.length;
 
     // check bulk mode
@@ -193,9 +241,11 @@ function onNewEvent(evt) {
     // check object necessary properties
     if (!eventObject.hasOwnProperty('guid') || !eventObject.hasOwnProperty('measurename')) return;
     var measurenameHash = eventObject['measurename'].hashCode();
+
     // auto add flows
-    if (!dataFlows.hasOwnProperty(measurenameHash) || !dataFlows[measurenameHash].flows.hasOwnProperty(eventObject['guid']))
+    if (!dataFlows.hasOwnProperty(measurenameHash) || !dataFlows[measurenameHash].flows.hasOwnProperty(eventObject['guid'])) {
         addNewDataFlow(eventObject);
+    }
 
     if (eventObject.alerttype != null) {
         var table = $('#alertTable').DataTable();
@@ -263,9 +313,102 @@ function timerIncrement() {
     }
 }
 
+function changeConst(timeWindow) {
+    for (var id in dataFlows) {
+        if (dataFlows[id].chart)
+            dataFlows[id].chart.changeConst(timeWindow);
+    }
+}
+
+function updateCharts() {
+    for (var id in dataFlows) {
+        if (dataFlows[id].chart)
+            dataFlows[id].chart.updateChart();
+    }
+}
+
+function GetLastData(lastIntervalMins, isHistorical) {
+    $body = $("body");
+    $body.addClass("loading");
+    $.ajax({
+        url: 'api/historical/GetLast?intervalMins=' + lastIntervalMins,
+        success: function (data) {
+            if (isHistorical) {
+                $('.selectSensorLabel').show();
+                $.each(data, function (index, value) {
+                    value['measurename'] += "Historical";
+                    deleteHistoricalDataFlow(value);
+                });
+            }
+
+            var usedMeasureNameHash = {};
+            $.each(data, function (index, value) {
+                var measurenameOriginal = value['measurename'] + '';
+                var measurenameHash = measurenameOriginal.hashCode();
+
+                if (!usedMeasureNameHash.hasOwnProperty(measurenameHash)) {
+                    usedMeasureNameHash[measurenameHash] = {};
+                }
+            });
+            
+            for (var id in usedMeasureNameHash) if (dataFlows.hasOwnProperty(id)) {
+                if (dataFlows[id].chart)
+                    dataFlows[id].chart.clearDataFlows();
+            }
+
+            $.each(data, function (index, value) {
+                value.doNotUpdate = true;
+                var event = {
+                    owner: {
+                        data: value
+                    }
+                };
+
+                dataFlows.dataSource._pushMessage(event);
+            });
+
+            updateCharts();
+            $body.removeClass("loading");
+        }
+    });
+}
+
 $(document).ready(function () {
+    $('nav li ul').hide().removeClass('fallback');
+    $('nav li').hover(
+      function () {
+          $('ul', this).stop().slideDown(100);
+      },
+      function () {
+          $('ul', this).stop().slideUp(100);
+      }
+    );
+
+    $('.intervalNav').find('.interval').click(function () {
+        intervalLabel.text($(this).text());
+        timeIntervalMins = parseFloat($(this).attr('interval'));
+        changeConst(timeIntervalMins);
+        if(timeIntervalMins>=1)
+            GetLastData(timeIntervalMins, false);
+    });
+
+    timeIntervalMins = 10;
+    $(".lastDataDropDown").click(function () {
+        var lastIntervalMins = parseInt($(this).attr('interval'));
+
+        changeConst(lastIntervalMins);
+        if (lastIntervalMins >= timeIntervalMins) {
+            GetLastData(lastIntervalMins, false);
+        }
+        timeIntervalMins = lastIntervalMins;
+    });
+
     var globalSettings = $('.globalSettings');
     var forceSocketCloseOnUserActionsTimeout = globalSettings.find('.ForceSocketCloseOnUserActionsTimeout').text().toLowerCase() == 'true';
+    var addHistorical = globalSettings.find('.AddHistorical').text().toLowerCase() == 'true';
+    if (addHistorical) {
+        $('.historicalDiv').show();
+    }
 
     if (forceSocketCloseOnUserActionsTimeout) {
         var idleInterval = setInterval(timerIncrement, 1000); // 1 second
@@ -278,8 +421,9 @@ $(document).ready(function () {
     var uri = 'ws' + sss + '://' + window.location.host + '/api/websocketconnect?clientId=none';
 
     $('#messages').prepend('<div> Connecting to ' + uri + '<div>');
-    dataFlows.dataSource = new d3CTDDataSourceSocket(uri).addEventListeners({ 'eventObject': onNewEvent, 'error': onError, 'open': onOpen });
+    dataFlows.dataSource = new d3CTDDataSourceSocket(uri).addEventListeners({ 'eventObject': onNewWebSocketEvent, 'error': onError, 'open': onOpen });
 
+    
     $('#selectAllOpt').on('click', function () {
         onChangeSensors(true);
     });

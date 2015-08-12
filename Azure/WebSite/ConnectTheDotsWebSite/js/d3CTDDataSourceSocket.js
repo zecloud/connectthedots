@@ -95,6 +95,22 @@ d3CTDDataSourceSocket.prototype = {
             // forward message
             self.raiseEvent('eventObject', eventObject);
         }
+    },
+    _pushMessage: function (event) {
+        var self = this;
+        if (self._updatingState) return;
+        if (self._firstMessage) {
+            self._firstMessage = false;
+
+            self.changeDeviceGUIDs();
+
+            // prevent next call
+            event.handled = true;
+        } else {
+            var eventObject = event.owner.data;
+            // forward message
+            self.raiseEvent('eventObject', eventObject);
+        }
     }
 };
 
