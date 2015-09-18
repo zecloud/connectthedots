@@ -470,7 +470,6 @@ d3Chart.prototype = {
         if (!self._line) {
             self._line = [
                 d3.svg.line()
-                .interpolate("monotone")
                 .x(function (d) {
                     return self._x(d.time);
                 })
@@ -479,7 +478,6 @@ d3Chart.prototype = {
                 }),
 
                 d3.svg.line()
-                .interpolate("monotone")
                 .x(function (d) {
                     return self._x(d.time);
                 })
