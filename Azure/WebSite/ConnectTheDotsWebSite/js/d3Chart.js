@@ -55,10 +55,13 @@ function d3Chart(containerId) {
     // register update handler
     self.addEventListener('update', function (evt) {
         self.pruneOldData();
-        self.updateChart();
+        self._needUpdate = true;
     });
 
     self._wasResizeHandled = true;
+    self._needUpdate = false;
+
+    self.runUpdateChart();
 
     return self;
 }
@@ -225,7 +228,7 @@ d3Chart.prototype = {
                 self.removeChartVisual();
                 d3.select("#" + containerId).select('svg').remove();
                 // create a new one w/ correct size
-                self.updateChart();
+                self._needUpdate = true;
             });
         }
 
@@ -357,7 +360,17 @@ d3Chart.prototype = {
             }
         }
     },
+    runUpdateChart: function() {
+        var self = this;
 
+        setTimeout(function () {
+            if (self._needUpdate == true) {
+                self._needUpdate = false;
+                self.updateChart();
+            }
+            self.runUpdateChart();
+        }, 250);
+    },
     updateChart: function () {
 
         var self = this;
@@ -386,9 +399,7 @@ d3Chart.prototype = {
             var y = dataFlow.yAxis();
 
             for (var j = 0; j < data.length; j++) {
-
                 var c = data[j].data;
-                var t = data[j].time;
 
                 if (c < minVal[y]) {
                     minVal[y] = c;
@@ -397,13 +408,14 @@ d3Chart.prototype = {
                 if (c > maxVal[y]) {
                     maxVal[y] = c;
                 }
+            }
 
-                if (t > maxDate) {
-                    maxDate = t;
+            if (data.length > 0) {
+                if (data[data.length - 1].time > maxDate) {
+                    maxDate = data[data.length - 1].time;
                 }
-
-                if (t < minDate) {
-                    minDate = t;
+                if (data[0].time < minDate) {
+                    minDate = data[0].time;
                 }
             }
         }
@@ -500,7 +512,7 @@ d3Chart.prototype = {
                 if (dataFlowVisuals.path == null) {
                     dataFlowVisuals.path = self._svg.append("g")
 						.append("path")
-						.datum(data)
+						.data([data])
 						.attr("class", "line")
 						.attr("d", self._line[yAxis])
 						.style("stroke", function (d) {
@@ -508,8 +520,8 @@ d3Chart.prototype = {
 						});
                 }
 
-                dataFlowVisuals.path.datum(data)
-					.attr("d", self._line[yAxis]);
+                dataFlowVisuals.path.data([data])
+                	.attr("d", self._line[yAxis]);
 
                 // draw alert points
                 for (var pnt in data) {
