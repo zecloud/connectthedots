@@ -8,5 +8,5 @@ This is the version using Windows 10 IoT Core on a Raspberry Pi 2. It requires a
 ##RaspbianFezHat
 This is the version using Raspbian and Mono/C# for development using a PC and a Raspberry Pi 2. It does not reuqire Windows 10, but currently does rely on Visual Studio for development.
 
-
+![](Images/WindowsIoTCorePi2FezHat/fezhat-connected-to-raspberri-pi-2.png?raw=true)
 
