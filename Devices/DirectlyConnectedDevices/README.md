@@ -4,11 +4,14 @@ These are simplified versions of the client code, designed to help the lab parti
 
 ##WindowsIoTCorePi2FezHat
 This is the version using Windows 10 IoT Core on a Raspberry Pi 2. It requires a Windows 10 PC for development.
+
 [View lab here](WindowsIoTCorePi2FezHat)
 
 ##RaspbianFezHat
 This is the version using Raspbian and Mono/C# for development using a PC and a Raspberry Pi 2. It does not reuqire Windows 10, but currently does rely on Visual Studio for development.
+
 [View lab here](RaspbianFezHat)
+
 
 ![](WindowsIoTCorePi2FezHat/Images/fezhat-connected-to-raspberri-pi-2.png?raw=true)
 
