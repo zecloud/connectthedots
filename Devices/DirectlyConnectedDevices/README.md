@@ -15,3 +15,28 @@ This is the version using Raspbian and Mono/C# for development using a PC and a 
 
 ![](WindowsIoTCorePi2FezHat/Images/fezhat-connected-to-raspberri-pi-2.png?raw=true)
 
+##Important Windows Links
+[UWP Developer Center](http://dev.windows.com)
+[Windows on Devices](http://windowsondevices.com)
+[Windows Embedded/IoT](http://www.microsoft.com/windowsembedded/en-us/windows-embedded.aspx)
+
+##Important Raspberry Pi Links
+[Raspberry Pi downloads page](https://www.raspberrypi.org/downloads/)
+
+##Important Azure IoT Suite Links
+
+Note that these are Azure IoT Suite documents. The labs do not currently use IoT Suite, but much of the information is relevant, and can be used to build upon what you have learned in these labs.
+
+[Azure IoT Suite Content](http://www.internetofyourthings.com/)
+[Azure IoT Developer Center](https://azure.microsoft.com/en-us/develop/iot/)
+[Microsoft Azure Certified for IoT](https://azure.microsoft.com/en-us/marketplace/certified-iot-program/)
+
+###Tutorial Videos
+[Introducing Azure IoT Suite](https://azure.microsoft.com/en-us/documentation/videos/azurecon-2015-introducing-the-microsoft-azure-iot-suite/)
+[Introducing Azure IoT Hub](https://azure.microsoft.com/en-us/documentation/videos/azurecon-2015-overview-of-azure-iot-hub/)
+[Connect your devices with Azure IoT client libraries](https://azure.microsoft.com/en-us/documentation/videos/azurecon-2015-connect-your-iot-devices-with-azure-iot-client-libraries/)
+
+###Documentation
+[Azure IoT Suite](http://www.microsoft.com/en-us/server-cloud/internet-of-things/azure-iot-suite.aspx)
+[Provisioning Remote Monitoring](http://www.microsoft.com/en-us/server-cloud/internet-of-things/getting-started.aspx)
+[Including a physical device in remote monitoring](https://azure.microsoft.com/en-us/documentation/articles/iot-suite-connecting-devices/)
