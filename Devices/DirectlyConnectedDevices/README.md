@@ -12,6 +12,9 @@ This is the version using Raspbian and Mono/C# for development using a PC and a 
 
 [View lab here](RaspbianFezHat)
 
+##Hardware
+
+In all labs above, the hardware used is a Raspberry Pi 2 and a GHI FEZ HAT. See individual labs for more information.
 
 ![](WindowsIoTCorePi2FezHat/Images/fezhat-connected-to-raspberri-pi-2.png?raw=true)
 
