@@ -3,6 +3,9 @@
 
 ConnectTheDots will help you get tiny devices connected to Microsoft Azure, and to implement great IoT solutions taking advantage of Microsoft Azure advanced analytic services such as Azure Stream Analytics and Azure Machine Learning.
 
+> This lab is stand-alone, but is used at Microsoft to accompany a presentation about Azure, Windows 10 IoT Core, Raspbian, and our IoT services. If you wish to follow this on your own, you are encouraged to do so. If not, consider attending a Microsoft-led IoT lab in your area.
+
+
 In this lab you will use a [Raspberry Pi 2](https://www.raspberrypi.org/products/raspberry-pi-2-model-b/) device running [Raspbian](https://www.raspberrypi.org/downloads/raspbian/) and a [FEZ HAT](https://www.ghielectronics.com/catalog/product/500) sensor hat. Using an Application, the sensors get the raw data and format it into a JSON string. That string is then shuttled off to the Azure Event Hub, where it gathers the data and will be consumed in different ways, such as displaying it as a chart using Power BI.
 
 This lab includes the following tasks:
