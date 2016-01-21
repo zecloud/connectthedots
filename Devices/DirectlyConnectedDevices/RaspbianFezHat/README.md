@@ -144,7 +144,8 @@ To setup your devices perform the following steps:
 			````
 			$ sudo raspi-config
 			````		
-
+		
+			Note: start by extending the size of the partition in the main menu
 		2. Select **Advanced Options** and hit Enter
 		
 			![Raspi-Config Menu](Images/raspi-config-menu.png?raw=true)
