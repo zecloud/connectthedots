@@ -177,32 +177,8 @@ To setup your devices perform the following steps:
 	$ sudo apt-get update
 	$ sudo apt-get install mono-complete
 	````
-10. Lastly, you will install and configure an FTP server to copy files from the development computer. To do this, perform the following steps.
-	1. Install the FTP server by running the following command.
-	
-		````
-		$ sudo apt-get install vsftpd
-		````
-
-	2. Configure the server by editing the config file. To do it, run the following command:
-	
-		````	
-		$ sudo nano /etc/vsftpd.conf
-		````
-		
-		Ensure that the following settings are set to **YES**.
-		
-		````	
-		local_enable=YES
-		write_enable=YES
-		````
-		
-	
-	3. Restart the server by running the following:
-
-		````	
-		$ sudo /etc/init.d/vsftpd restart
-		````	
+10.
+		Get FileZilla Here on your development computer https://filezilla-project.org/ 
 
 <a name="Task13" />
 ###Setting up your Azure Account###
