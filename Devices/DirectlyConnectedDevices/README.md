@@ -2,6 +2,8 @@ For Microsoft Field IoT Labs, you'll want to use one of the following labs. Each
 
 These labs include simplified versions of the client code, designed to help the lab participants focus on accomplishing their goal of getting data to Azure, and analyzing it. They may be built upon using other pieces from the larger Connect the Dots, or expanded to use additional sensors included in the FEZ HAT.
 
+To clone only this branch git clone <url> --branch <branch> --single-branch [<folder>] 
+
 ##WindowsIoTCorePi2FezHat
 This is the version using Windows 10 IoT Core on a Raspberry Pi 2. It requires a Windows 10 PC for development. Products and services demonstrated include Windows UWP development, Event Hubs, Stream Analytics, Azure Web Apps, Power BI, and more.
 
