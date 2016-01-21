@@ -65,9 +65,9 @@
                 this.DisplayName = hostInfoIP.HostName;
             }
 
-            var httpUtility = new HttpUtility();
+            
 
-            this.appAMQPAddressName = string.Format(CultureInfo.InvariantCulture, "amqps://{0}:{1}@{2}.servicebus.windows.net", keyName, HttpUtility.UrlEncode(key), serviceBusNamespace);
+            this.appAMQPAddressName = string.Format(CultureInfo.InvariantCulture, "amqps://{0}:{1}@{2}.servicebus.windows.net", keyName, WebUtility.UrlEncode(key), serviceBusNamespace);
             this.appAMQPAddress = new Address(this.appAMQPAddressName);
             this.appEHTarget = eventHubName;
 
