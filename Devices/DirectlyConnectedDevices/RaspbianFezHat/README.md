@@ -1260,6 +1260,11 @@ In the previous task you created an App that read data from the sensors and sent
 	
 	You will see in the console app, all the values that are read from the event hub. These values are parsed by the **EventProcessor** and will show the values read from the sensors of the _Raspeberri Pi2_, light and temperature.
 	
+Create A Linux Vm on Azure and test the app
+https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-linux-tutorial-portal-rm/	
+https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-linux-tutorial/
+	
+	
 <a name="Task32" />
 ###Using Power BI###
 
@@ -1485,6 +1490,8 @@ Once the job starts it creates the Power BI datasource associated with the given
 <a name="Task33" />
 ###Consuming the Event Hub data from a Website###
 	
+	
+	
 1. Download the Website project located [here](https://github.com/southworkscom/connectthedots/tree/master/Azure/WebSite).
 2. Browse to the **Assets** folder and copy the _Web.config_ file inside the **ConnectTheDotsWebSite** folder of the Website.
 
@@ -1498,6 +1505,15 @@ Once the job starts it creates the Power BI datasource associated with the given
 	- **Microsoft.ServiceBus.ConnectionString**: Namespace endpoint connection string.
 	- **Microsoft.ServiceBus.ConnectionStringDevices**: Event hub endpoint connection string.
 	- **Microsoft.Storage.ConnectionString**: Storage account endpoint, in this case use the **storage account name** and **storage account primary key** to complete the endpoint.
+	
+	Build and Publish into Azure With VS Online 
+	
+	create an account https://www.visualstudio.com/fr-fr/products/visual-studio-team-services-vs.aspx
+	
+	https://msdn.microsoft.com/Library/vs/alm/Build/vs/define-build
+	
+	https://msdn.microsoft.com/en-us/library/vs/alm/build/azure/aspnet4
+	
 5. Deploy the website to an Azure Web Site. To do this, perform the following steps.
 	1. In Visual Studio, right-click on the project name and select **Publish**.
 	2. Select **Microsoft Azure Web Apps**.
