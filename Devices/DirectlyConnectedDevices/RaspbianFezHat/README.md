@@ -1291,7 +1291,10 @@ https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-linux-
 	
 	https://msdn.microsoft.com/Library/vs/alm/Build/vs/define-build
 	
+	https://blogs.msdn.microsoft.com/visualstudioalm/2015/06/12/deploying-an-azure-web-site-using-the-new-build-system-in-visual-studio-online/
+	
 	https://msdn.microsoft.com/en-us/library/vs/alm/build/azure/aspnet4
+	
 	
 5. Deploy the website to an Azure Web Site. To do this, perform the following steps.
 	1. In Visual Studio, right-click on the project name and select **Publish**.
