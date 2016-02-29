@@ -1265,6 +1265,82 @@ https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-linux-
 https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-linux-tutorial/
 	
 	
+
+<a name="Task33" />
+###Consuming the Event Hub data from a Website###
+	
+	
+	
+1. Download the Website project located [here](https://github.com/southworkscom/connectthedots/tree/master/Azure/WebSite).
+2. Browse to the **Assets** folder and copy the _Web.config_ file inside the **ConnectTheDotsWebSite** folder of the Website.
+
+	![Copying the web config to the website solution](Images/copying-the-web-config-to-the-website-solutio.png?raw=true)
+
+	_Copying the **Web.config** to the WebSite solution_
+
+3. Open the Web Site project (_ConnectTheDotsWebSite.sln_) in Visual Studio.
+4. Edit the _Web.config_ file and add the corresponding values for the following keys:
+	- **Microsoft.ServiceBus.EventHubDevices**: Name of the event hub.
+	- **Microsoft.ServiceBus.ConnectionString**: Namespace endpoint connection string.
+	- **Microsoft.ServiceBus.ConnectionStringDevices**: Event hub endpoint connection string.
+	- **Microsoft.Storage.ConnectionString**: Storage account endpoint, in this case use the **storage account name** and **storage account primary key** to complete the endpoint.
+	
+	Build and Publish into Azure With VS Online 
+	
+	create an account https://www.visualstudio.com/fr-fr/products/visual-studio-team-services-vs.aspx
+	
+	https://msdn.microsoft.com/Library/vs/alm/Build/vs/define-build
+	
+	https://msdn.microsoft.com/en-us/library/vs/alm/build/azure/aspnet4
+	
+5. Deploy the website to an Azure Web Site. To do this, perform the following steps.
+	1. In Visual Studio, right-click on the project name and select **Publish**.
+	2. Select **Microsoft Azure Web Apps**.
+	
+		![Selecting Publish Target](Images/selecting-publish-target.png?raw=true)
+		
+		_Selecting Publish target_
+		
+	3. Click **New** and use the following configuration.
+	
+		- **Web App name**: Pick something unique.
+		- **App Service plan**: Select an App Service plan in the same region used for _Stream Analytics_ or create a new one using that region.
+		- **Region**: Pick same region as you used for _Stream Analytics_.
+		- **Database server**: No database.
+		
+	4. Click **Create**. After some time the website will be created in Azure.
+	
+		![Creating a New Web App](Images/creating-a-new-web-app.png?raw=true)
+		
+		_Creating a new Web App on Microsoft Azure_
+		
+	3. Click **Publish**.
+	
+		> **Note:** You might need to install **WebDeploy** extension if you are having an error stating that the Web deployment task failed. You can find WebDeploy [here](http://www.iis.net/downloads/microsoft/web-deploy).
+
+	
+6. After you deployed the site, it is required that you enable **Websockets**. To do this, perform the following steps:
+	1. Browse to https://manage.windowsazure.com and select your _Azure Web Site_.
+	2. Click the **Configure** tab.
+	3. Then set **WebSockets** to **On** and click **Save**.
+	
+		![Enabling Web Sockets](Images/enabling-web-sockets.png?raw=true)
+	
+		_Enabling Web Sockets in your website_
+
+7. Browse to your recently deployed Web Application. You will see something like in the following screenshot. There will be 2 real-time graphics representing the values read from the temperature and light sensors. Take into account that the App must be running and sending information to the Event Hub in order to see the graphics.
+
+	![Web Site Consuming the Event Hub Data](Images/web-site-consuming-the-event-hub-data.png?raw=true)
+	
+	_Web Site Consuming the Event Hub data_
+	
+	> **Note:** At the bottom of the page you should see “**Connected**.”. If you see “**ERROR undefined**” you likely didn’t enable **WebSockets** for the Azure Web Site.
+	
+	Add Stream Analytics Alerts
+	https://github.com/zecloud/connectthedots/blob/IoT-Field-Labs/Azure/StreamAnalyticsQueries/SA_setup.md
+	Machine Learning 
+	https://github.com/zecloud/connectthedots/tree/IoT-Field-Labs/Azure/MachineLearning
+
 <a name="Task32" />
 ###Using Power BI###
 
@@ -1486,76 +1562,6 @@ Once the job starts it creates the Power BI datasource associated with the given
 	![Final Power BI Dashboard](Images/final-power-bi-dashboard.png?raw=true)
 	
 	_Final Power BI Dashboard_
-
-<a name="Task33" />
-###Consuming the Event Hub data from a Website###
-	
-	
-	
-1. Download the Website project located [here](https://github.com/southworkscom/connectthedots/tree/master/Azure/WebSite).
-2. Browse to the **Assets** folder and copy the _Web.config_ file inside the **ConnectTheDotsWebSite** folder of the Website.
-
-	![Copying the web config to the website solution](Images/copying-the-web-config-to-the-website-solutio.png?raw=true)
-
-	_Copying the **Web.config** to the WebSite solution_
-
-3. Open the Web Site project (_ConnectTheDotsWebSite.sln_) in Visual Studio.
-4. Edit the _Web.config_ file and add the corresponding values for the following keys:
-	- **Microsoft.ServiceBus.EventHubDevices**: Name of the event hub.
-	- **Microsoft.ServiceBus.ConnectionString**: Namespace endpoint connection string.
-	- **Microsoft.ServiceBus.ConnectionStringDevices**: Event hub endpoint connection string.
-	- **Microsoft.Storage.ConnectionString**: Storage account endpoint, in this case use the **storage account name** and **storage account primary key** to complete the endpoint.
-	
-	Build and Publish into Azure With VS Online 
-	
-	create an account https://www.visualstudio.com/fr-fr/products/visual-studio-team-services-vs.aspx
-	
-	https://msdn.microsoft.com/Library/vs/alm/Build/vs/define-build
-	
-	https://msdn.microsoft.com/en-us/library/vs/alm/build/azure/aspnet4
-	
-5. Deploy the website to an Azure Web Site. To do this, perform the following steps.
-	1. In Visual Studio, right-click on the project name and select **Publish**.
-	2. Select **Microsoft Azure Web Apps**.
-	
-		![Selecting Publish Target](Images/selecting-publish-target.png?raw=true)
-		
-		_Selecting Publish target_
-		
-	3. Click **New** and use the following configuration.
-	
-		- **Web App name**: Pick something unique.
-		- **App Service plan**: Select an App Service plan in the same region used for _Stream Analytics_ or create a new one using that region.
-		- **Region**: Pick same region as you used for _Stream Analytics_.
-		- **Database server**: No database.
-		
-	4. Click **Create**. After some time the website will be created in Azure.
-	
-		![Creating a New Web App](Images/creating-a-new-web-app.png?raw=true)
-		
-		_Creating a new Web App on Microsoft Azure_
-		
-	3. Click **Publish**.
-	
-		> **Note:** You might need to install **WebDeploy** extension if you are having an error stating that the Web deployment task failed. You can find WebDeploy [here](http://www.iis.net/downloads/microsoft/web-deploy).
-
-	
-6. After you deployed the site, it is required that you enable **Websockets**. To do this, perform the following steps:
-	1. Browse to https://manage.windowsazure.com and select your _Azure Web Site_.
-	2. Click the **Configure** tab.
-	3. Then set **WebSockets** to **On** and click **Save**.
-	
-		![Enabling Web Sockets](Images/enabling-web-sockets.png?raw=true)
-	
-		_Enabling Web Sockets in your website_
-
-7. Browse to your recently deployed Web Application. You will see something like in the following screenshot. There will be 2 real-time graphics representing the values read from the temperature and light sensors. Take into account that the App must be running and sending information to the Event Hub in order to see the graphics.
-
-	![Web Site Consuming the Event Hub Data](Images/web-site-consuming-the-event-hub-data.png?raw=true)
-	
-	_Web Site Consuming the Event Hub data_
-	
-	> **Note:** At the bottom of the page you should see “**Connected**.”. If you see “**ERROR undefined**” you likely didn’t enable **WebSockets** for the Azure Web Site.
 
 <a name="Summary" />
 ##Summary##
